@@ -1,0 +1,15 @@
+{
+    "name": "samuel/cmm",
+    "authors": [
+        {
+            "name": "Samuel Souza",
+            "email": "souzacarvalhosamuel@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Compiler\\": "src/"
+        }
+    }
+}

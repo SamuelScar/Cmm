@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>CMM &ndash; Compilador da Linguagem C em PHP</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="cmm--compilador-da-linguagem-c-em-php">CMM – Compilador da Linguagem C em PHP</h1>
+<p>Este é um projeto acadêmico em andamento com o objetivo de construir, passo a passo, um <strong>compilador completo da linguagem C</strong>, escrito em <strong>PHP</strong> e executado via <strong>PHP-CLI</strong>.</p>
+<p>Atualmente, esta versão implementa a <strong>análise léxica (lexer)</strong> com reconhecimento dos principais tokens da linguagem C.</p>
+<hr>
+<h2 id="-funcionalidades-atuais">📆 Funcionalidades atuais</h2>
+<ul>
+<li>Leitura de código-fonte C a partir de um arquivo <code>.c</code></li>
+<li>Identificação dos seguintes tipos de tokens:
+<ul>
+<li>Palavras-chave: <code>int</code>, <code>float</code>, <code>if</code>, <code>else</code>, <code>return</code>, <code>while</code>, <code>for</code>, <code>void</code></li>
+<li>Identificadores</li>
+<li>Números inteiros e reais</li>
+<li>Operadores: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>=</code>, <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>&amp;&amp;</code>, <code>||</code></li>
+<li>Delimitadores: <code>() {} ; , []</code></li>
+<li>Ignora comentários (<code>//</code> e <code>/* */</code>) e espaços em branco</li>
+</ul>
+</li>
+<li>Impressão da sequência de tokens no terminal</li>
+</ul>
+<hr>
+<h2 id="-como-rodar">🚀 Como rodar</h2>
+<ol>
+<li>
+<p>Clone o repositório:</p>
+<pre><code class="language-bash">git <span class="hljs-built_in">clone</span> https://github.com/seu-usuario/cmm.git
+<span class="hljs-built_in">cd</span> cmm
+</code></pre>
+</li>
+<li>
+<p>Instale o autoload do Composer:</p>
+<pre><code class="language-bash">composer dump-autoload
+</code></pre>
+</li>
+<li>
+<p>Adicione ou edite o arquivo <code>exemple.c</code> com um código C simples.</p>
+</li>
+<li>
+<p>Execute:</p>
+<pre><code class="language-bash">php run.php exemple.c
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2 id="-estrutura-do-projeto">📂 Estrutura do projeto</h2>
+<pre><code>cmm/
+├── src/              # Classes do compilador
+│   ├── Token.php
+│   └── Lexer.php
+├── exemple.c         # Arquivo de código C para testes
+├── run.php           # Ponto de entrada via terminal
+├── composer.json     # Configuração do autoload
+└── vendor/           # Gerado pelo Composer
+</code></pre>
+<hr>
+<h2 id="️-em-breve">🛠️ Em breve...</h2>
+<p>Este projeto será expandido com:</p>
+<ul>
+<li>Rastreamento de linha e coluna dos tokens</li>
+<li>Saída opcional em JSON</li>
+<li>Construção de tabela de símbolos</li>
+<li>Análise sintática (parser)</li>
+<li>Análise semântica</li>
+<li>Geração de código intermediário ou assembly</li>
+<li>Simulador de execução</li>
+</ul>
+<hr>
+<h2 id="-contribuição">🤝 Contribuição</h2>
+<p>Este projeto é acadêmico e está sendo desenvolvido aos poucos, com foco em aprendizado e aplicação prática de teoria de compiladores. Sugestões e melhorias são bem-vindas!</p>
+<hr>
+<h2 id="-licença">📄 Licença</h2>
+<p>Este projeto está sob a licença MIT.</p>
+
+            
+            
+        </body>
+        </html>
