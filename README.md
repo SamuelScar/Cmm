@@ -11,12 +11,39 @@ Atualmente, esta versão implementa a **análise léxica (lexer)** com reconheci
 - Leitura de código-fonte C a partir de um arquivo `.c`
 - Identificação dos seguintes tipos de tokens:
   - Palavras-chave: `int`, `float`, `if`, `else`, `return`, `while`, `for`, `void`
-  - Identificadores
-  - Números inteiros e reais
+  - Identificadores *(nomes definidos pelo programador, como variáveis, funções ou constantes; exemplos: `total`, `contador`, `main`)*
+  - Números inteiros e reais *(valores numéricos como `10`, `0`, `-42`, `3.14`, `-0.5`, `2e10`)*
   - Operadores: `+`, `-`, `*`, `/`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`
   - Delimitadores: `() {} ; , []`
   - Ignora comentários (`//` e `/* */`) e espaços em branco
 - Impressão da sequência de tokens no terminal
+
+---
+
+---
+
+## ✅ Pré-requisitos
+
+Antes de executar o compilador, verifique se você possui os seguintes itens instalados na sua máquina:
+
+- **PHP 8.0 ou superior**  
+  Recomendado para garantir compatibilidade com sintaxe moderna e desempenho adequado.  
+  Verifique com:  
+  ```bash
+  php -v
+  ```
+
+- **Composer**  
+  Utilizado para autoload das classes.  
+  Verifique com:  
+  ```bash
+  composer --version
+  ```
+
+Caso não tenha o PHP ou o Composer instalados, consulte a documentação oficial:
+
+- [PHP Downloads](https://www.php.net/downloads)
+- [Composer Installation](https://getcomposer.org/download/)
 
 ---
 
@@ -57,19 +84,6 @@ cmm/
 
 ---
 
-## 🛠️ Em breve...
-
-Este projeto será expandido com:
-
-- Rastreamento de linha e coluna dos tokens
-- Saída opcional em JSON
-- Construção de tabela de símbolos
-- Análise sintática (parser)
-- Análise semântica
-- Geração de código intermediário ou assembly
-- Simulador de execução
-
----
 
 ## 🤝 Contribuição
 
