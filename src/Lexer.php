@@ -1,14 +1,16 @@
 <?php
 
 namespace Compiler;
-use Exception;
-
 class Lexer
 {
     private string $source;
     private int $pos = 0;
     private int $length;
+    private int $line = 1;
+    private int $column = 1;
+
     private array $tokens = [];
+    private array $errors = [];
 
     private array $tokenPatterns = [
         'WHITESPACE' => '/^\s+/',
@@ -41,16 +43,54 @@ class Lexer
                         $this->tokens[] = new Token($type, $value);
                     }
 
-                    $this->pos += strlen($value);
+                    $this->updatePosition($value);
                     break;
                 }
             }
 
             if (!$matched) {
-                throw new Exception("Token inválido na posição {$this->pos}: '{$this->source[$this->pos]}'");
+                $invalidChar = $this->source[$this->pos];
+                $this->errors[] = [
+                    'linha' => $this->line,
+                    'coluna' => $this->column,
+                    'simbolo' => $invalidChar,
+                    'mensagem' => "Símbolo inválido encontrado: '{$invalidChar}'"
+                ];
+                $this->advance();
             }
         }
 
         return $this->tokens;
+    }
+
+    private function updatePosition(string $text): void
+    {
+        for ($i = 0; $i < strlen($text); $i++) {
+            if ($text[$i] === "\n") {
+                $this->line++;
+                $this->column = 1;
+            } else {
+                $this->column++;
+            }
+            $this->pos++;
+        }
+    }
+
+    private function advance(): void
+    {
+        if ($this->pos < $this->length) {
+            if ($this->source[$this->pos] === "\n") {
+                $this->line++;
+                $this->column = 1;
+            } else {
+                $this->column++;
+            }
+            $this->pos++;
+        }
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 }

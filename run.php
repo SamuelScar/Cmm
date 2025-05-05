@@ -18,14 +18,19 @@ if (php_sapi_name() === 'cli') {
     }
 
     $lexer = new Lexer($input);
+    $tokens = $lexer->tokenize();
 
-    try {
-        $tokens = $lexer->tokenize();
-        foreach ($tokens as $token) {
-            echo $token . PHP_EOL;
+    // Exibe tokens
+    foreach ($tokens as $token) {
+        echo $token . PHP_EOL;
+    }
+
+    // Exibe erros léxicos, se houver
+    $errors = $lexer->getErrors();
+    if (!empty($errors)) {
+        echo PHP_EOL . "Erros léxicos encontrados:" . PHP_EOL;
+        foreach ($errors as $erro) {
+            echo "Linha {$erro['linha']}, Coluna {$erro['coluna']}: {$erro['mensagem']}" . PHP_EOL;
         }
-    } catch (Exception $e) {
-        echo "Erro: " . $e->getMessage() . PHP_EOL;
-        exit(1);
     }
 }
