@@ -2,23 +2,103 @@
 
 Este é um projeto acadêmico em andamento com o objetivo de construir, passo a passo, um **compilador completo da linguagem C**, escrito em **PHP** e executado via **PHP-CLI**.
 
-Atualmente, esta versão implementa a **análise léxica (lexer)** com reconhecimento dos principais tokens da linguagem C.
+Atualmente, esta versão implementa:
+
+- Análise léxica (lexer), reconhecendo os principais tokens da linguagem C.  
+- Análise sintática (parser) recursivo-descendente, com suporte a expressões completas, controle de fluxo e chamadas de função.
+
+---
+
+## 📖 Gramática Atualizada
+
+```text
+Program
+ └─ Statement*
+
+Statement
+ ├─ Declaration
+ │    └─ Type Identifier [ '=' Expression ] ';'
+ ├─ Assignment
+ │    └─ Identifier '=' Expression ';'
+ ├─ IfStatement
+ │    └─ "if" "(" Expression ")" Statement [ "else" Statement ]
+ ├─ WhileStatement
+ │    └─ "while" "(" Expression ")" Statement
+ ├─ ForStatement
+ │    └─ "for" "(" Init? ";" Expression? ";" Expression? ")" Statement
+ ├─ SwitchStatement
+ │    └─ "switch" "(" Expression ")" "{" CaseClause* DefaultClause? "}"
+ ├─ ExpressionStatement
+ │    └─ Expression ";"
+ ├─ Block
+ │    └─ "{" Statement* "}"
+ ├─ ReturnStatement
+ │    └─ "return" [ Expression ] ";"
+ ├─ BreakStatement
+ │    └─ "break" ";"
+ ├─ ContinueStatement
+ │    └─ "continue" ";"
+ └─ ";"   (empty statement)
+
+Init
+ ├─ Declaration
+ └─ AssignmentNoSemi
+
+Expression
+ └─ LogicalOr
+
+LogicalOr
+ └─ LogicalAnd ( "||" LogicalAnd )*
+
+LogicalAnd
+ └─ Equality ( "&&" Equality )*
+
+Equality
+ └─ Relational ( ("==" | "!=") Relational )*
+
+Relational
+ └─ Additive ( ("<" | "<=" | ">" | ">=") Additive )*
+
+Additive
+ └─ Term ( ("+" | "-") Term )*
+
+Term
+ └─ Factor ( ("*" | "/") Factor )*
+
+Factor
+ ├─ UnaryOp Factor          # '!' | '-' | '+'
+ ├─ NUMBER
+ ├─ STRING_LITERAL
+ ├─ IDENTIFIER [ '(' ArgumentList? ')' ]
+ └─ "(" Expression ")"
+
+ArgumentList
+ └─ Expression ( "," Expression )*```
+
+```
 
 ---
 
 ## 📆 Funcionalidades atuais
 
-- Leitura de código-fonte C a partir de um arquivo `.c`
-- Identificação dos seguintes tipos de tokens:
-  - Palavras-chave: `int`, `float`, `if`, `else`, `return`, `while`, `for`, `void`
-  - Identificadores *(nomes definidos pelo programador, como variáveis, funções ou constantes; exemplos: `total`, `contador`, `main`)*
-  - Números inteiros e reais *(valores numéricos como `10`, `0`, `-42`, `3.14`, `-0.5`, `2e10`)*
-  - Operadores: `+`, `-`, `*`, `/`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`
-  - Delimitadores: `() {} ; , []`
-  - Ignora comentários (`//` e `/* */`) e espaços em branco
-- Impressão da sequência de tokens no terminal
+- **Lexer**  
+  - Comentários: `//`, `/* ... */`  
+  - Tokens:  
+    - Palavras-chave: `int`, `float`, `char`, `void`, `if`, `else`, `return`, `while`, `for`, `break`, `continue`, `switch`, `case`, `default`  
+    - Identificadores (incluindo `.` em nomes de arquivos)  
+    - Literais: números (inteiros e floats), strings (`"texto\n"`)  
+    - Operadores: `+`, `-`, `*`, `/`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`  
+    - Delimitadores: `()`, `{}`, `[]`, `;`, `,`, `:`  
 
----
+- **Parser**  
+  - AST com nós dedicados:  
+    - `ProgramNode`, `BlockNode`, `DeclarationNode`, `AssignmentNode`, `ExpressionStatementNode`  
+    - Expressões: `BinaryOpNode`, `UnaryOpNode`, `NumberNode`, `StringLiteralNode`, `IdentifierNode`, `FunctionCallNode`  
+    - Controle de fluxo: `IfNode`, `WhileNode`, `ForNode`, `SwitchNode`, `CaseNode`, `BreakNode`, `ContinueNode`, `ReturnNode`  
+    - Funções: `FunctionNode`, `ParameterNode`  
+  - Recursive-descent por precedência de operadores  
+  - Retirada de duplicação de parênteses via `parseParenExpression()`  
+  - Suporte a chamadas de função e expression-statements  
 
 ---
 
@@ -73,17 +153,42 @@ Caso não tenha o PHP ou o Composer instalados, consulte a documentação oficia
 
 ```
 cmm/
-├── src/              # Classes do compilador
+├── src/
+│   ├── Lexer.php
+│   ├── Parser.php
 │   ├── Token.php
-│   └── Lexer.php
-├── exemple.c         # Arquivo de código C para testes
-├── run.php           # Ponto de entrada via terminal
-├── composer.json     # Configuração do autoload
-└── vendor/           # Gerado pelo Composer
+│   └── Node/
+│       ├── ProgramNode.php
+│       ├── StatementNode.php
+│       ├── DeclarationNode.php
+│       ├── AssignmentNode.php
+│       ├── ExpressionStatementNode.php
+│       ├── NumberNode.php
+│       ├── StringLiteralNode.php
+│       ├── IdentifierNode.php
+│       ├── BinaryOpNode.php
+│       ├── UnaryOpNode.php
+│       ├── FunctionCallNode.php
+│       ├── IfNode.php
+│       ├── WhileNode.php
+│       ├── ForNode.php
+│       ├── SwitchNode.php
+│       ├── CaseNode.php
+│       ├── ReturnNode.php
+│       ├── BreakNode.php
+│       ├── ContinueNode.php
+│       ├── FunctionNode.php
+│       └── ParameterNode.php
+├── examples/
+│   ├── not.c
+│   ├── and.c
+│   └── or.c
+├── run.php
+├── composer.json
+└── vendor/
 ```
 
 ---
-
 
 ## 🤝 Contribuição
 
@@ -94,4 +199,3 @@ Este projeto é acadêmico e está sendo desenvolvido aos poucos, com foco em ap
 ## 📄 Licença
 
 Este projeto está sob a licença MIT.
-
