@@ -1,6 +1,24 @@
 #!/usr/bin/env php
 <?php
 
+/**
+ * run.php
+ *
+ * Ponto de entrada da linha de comando para o compilador C em PHP.
+ * Executa análise léxica e sintática, exibindo tokens e AST.
+ *
+ * Uso:
+ *   php run.php <arquivo.c>
+ *
+ * Mensagens:
+ *   - Se não for CLI, encerra com aviso.
+ *   - Se não receber arquivo, exibe instrução de uso.
+ *   - Ao ler o arquivo, exibe erro em caso de falha.
+ *   - Exibe lista de tokens reconhecidos.
+ *   - Em caso de erros léxicos, lista cada erro com linha/coluna e encerra.
+ *   - Executa o parser e imprime a AST ou mensagem de erro sintático.
+ */
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Compiler\Lexer;

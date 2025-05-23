@@ -1,7 +1,10 @@
 <?php
+
 namespace Compiler\Node;
 
-abstract class ExpressionNode
-{
-    
-}
+/**
+ * Nó base para todas as expressões na AST.
+ *
+ * @package Compiler\Node
+ */
+abstract class ExpressionNode {}

@@ -1,7 +1,10 @@
 <?php
+
 namespace Compiler\Node;
 
-abstract class StatementNode
-{
-
-}
+/**
+ * Nó base para todos os statements na AST.
+ *
+ * @package Compiler\Node
+ */
+abstract class StatementNode {}
