@@ -1,6 +1,7 @@
 <?php
 
 namespace Compiler;
+
 class Lexer
 {
     private string $source;
@@ -13,13 +14,28 @@ class Lexer
     private array $errors = [];
 
     private array $tokenPatterns = [
-        'WHITESPACE' => '/^\s+/',
-        'COMMENT'    => '/^\/\/.*|^\/\*[\s\S]*?\*\//',
-        'KEYWORD'    => '/^\b(int|float|if|else|return|while|for|void)\b/',
-        'IDENTIFIER' => '/^[a-zA-Z_][a-zA-Z0-9_]*/',
-        'NUMBER'     => '/^\d+(\.\d+)?/',
-        'OPERATOR'   => '/^(==|!=|<=|>=|\|\||&&|[+\-*\/=<>])/',
-        'DELIMITER'  => '/^[()\[\]{};,]/',
+        'WHITESPACE'     => '/^\s+/',
+        'COMMENT'        => '/^\/\/.*|^\/\*[\s\S]*?\*\//',
+        'STRING_LITERAL' => '/^"([^"\\\\]|\\\\.)*"/',
+        'CHAR_LITERAL'   => "/^'([^'\\\\]|\\\\.)'/",
+        'INT'            => '/^\bint\b/',
+        'FLOAT'          => '/^\bfloat\b/',
+        'CHAR'           => '/^\bchar\b/',
+        'VOID'           => '/^\bvoid\b/',
+        'IF'             => '/^\bif\b/',
+        'ELSE'           => '/^\belse\b/',
+        'RETURN'         => '/^\breturn\b/',
+        'WHILE'          => '/^\bwhile\b/',
+        'FOR'            => '/^\bfor\b/',
+        'BREAK'          => '/^\bbreak\b/',
+        'CONTINUE'       => '/^\bcontinue\b/',
+        'SWITCH'         => '/^\bswitch\b/',
+        'CASE'           => '/^\bcase\b/',
+        'DEFAULT'        => '/^\bdefault\b/',
+        'IDENTIFIER'     => '/^[a-zA-Z_][a-zA-Z0-9_]*/',
+        'NUMBER'         => '/^\d+(\.\d+)?/',
+        'OPERATOR'       => '/^(?:\|\||&&|==|!=|<=|>=|<|>|!|\+|-|\*|\/|=)/',
+        'DELIMITER'      => '/^[()\[\]{};,:]/',
     ];
 
     public function __construct(string $source)
@@ -51,8 +67,8 @@ class Lexer
             if (!$matched) {
                 $invalidChar = $this->source[$this->pos];
                 $this->errors[] = [
-                    'linha' => $this->line,
-                    'coluna' => $this->column,
+                    'linha'   => $this->line,
+                    'coluna'  => $this->column,
                     'simbolo' => $invalidChar,
                     'mensagem' => "Símbolo inválido encontrado: '{$invalidChar}'"
                 ];
