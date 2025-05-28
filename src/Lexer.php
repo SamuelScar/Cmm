@@ -118,7 +118,7 @@ class Lexer
                     $matched = true;
 
                     if ($type !== 'WHITESPACE' && $type !== 'COMMENT') {
-                        $this->tokens[] = new Token($type, $value);
+                        $this->tokens[] = new Token($type, $value, $this->line, $this->column);
                     }
 
                     $this->updatePosition($value);
