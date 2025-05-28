@@ -379,8 +379,12 @@ class Parser
 
         $post = null;
         if (!($this->lookahead()->type === 'DELIMITER' && $this->lookahead()->value === ')')) {
-            $expr = $this->parseExpression();
-            $post = new ExpressionStatementNode($expr);
+            if ($this->lookahead()->type === 'IDENTIFIER') {
+                $post = $this->parseAssignmentNoSemi();
+            } else {
+                $expr = $this->parseExpression();
+                $post = new ExpressionStatementNode($expr);
+            }
         }
 
         $rpar = $this->match('DELIMITER');
