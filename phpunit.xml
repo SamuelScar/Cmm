@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.1/phpunit.xsd"
+         bootstrap="phpunit-bootstrap.php"
+         colors="true"
+         testdox="true"
+         failOnRisky="false"
+         failOnWarning="false"
+         failOnDeprecation="false">
+    <testsuites>
+        <testsuite name="Compiler Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
