@@ -23,6 +23,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Compiler\Lexer;
 use Compiler\Parser;
+use Compiler\SyntaxError;
 
 if (php_sapi_name() !== 'cli') {
     echo "Este script deve ser executado via CLI.\n";
@@ -64,7 +65,10 @@ try {
     $ast = $parser->parseProgram();
     echo "Árvore de sintaxe (AST):\n";
     var_dump($ast);
+} catch (SyntaxError $e) {
+    echo "Erro sintático:\n", $e->getMessage(), PHP_EOL;
+    exit(1);
 } catch (\Exception $e) {
-    echo "Erro sintático: ", $e->getMessage(), PHP_EOL;
+    echo "Erro: ", $e->getMessage(), PHP_EOL;
     exit(1);
 }

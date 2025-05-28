@@ -26,6 +26,7 @@ use Compiler\Node\UnaryOpNode;
 use Compiler\Node\FunctionCallNode;
 use Compiler\Node\ExpressionStatementNode;
 use Compiler\Node\StringLiteralNode;
+use Compiler\SyntaxError;
 
 /**
  * Parser recursivo-descendente para CMM (linguagem C subset).
@@ -88,12 +89,10 @@ class Parser
     {
         $token = $this->lookahead();
         if ($token->type !== $type) {
-            throw new \RuntimeException(sprintf(
-                "Syntax error: esperado %s, encontrado %s at position %d",
-                $type,
-                $token->type,
-                $this->pos
-            ));
+            throw new SyntaxError(
+                sprintf("esperava token do tipo '%s', mas encontrou '%s'", $type, $token->type),
+                $token
+            );
         }
         $this->pos++;
         return $token;
@@ -155,9 +154,7 @@ class Parser
                     $expr = $this->parseExpression();
                     $semi = $this->match('DELIMITER');
                     if ($semi->value !== ';') {
-                        throw new \RuntimeException(
-                            "Syntax error: esperava ';' após expressão, encontrou '{$semi->value}'"
-                        );
+                        throw new SyntaxError("esperava ';' após expressão", $semi);
                     }
                     return new ExpressionStatementNode($expr);
                 }
@@ -186,7 +183,7 @@ class Parser
                 }
                 break;
         }
-        throw new \RuntimeException("Unexpected token in Statement: {$la->type}");
+        throw new SyntaxError("token inesperado no início de um statement", $la);
     }
 
     /**
@@ -206,8 +203,9 @@ class Parser
     {
         $typeToken = $this->lookahead();
         if (!in_array($typeToken->type, ['INT', 'FLOAT', 'CHAR', 'VOID'], true)) {
-            throw new \RuntimeException(
-                "Syntax error: esperava tipo (int|float|char|void), encontrou {$typeToken->type}"
+            throw new SyntaxError(
+                "esperava tipo (int, float, char ou void)",
+                $typeToken
             );
         }
         $this->pos++;
@@ -224,9 +222,7 @@ class Parser
 
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException(
-                "Syntax error: esperava ';', encontrou '{$semi->value}'"
-            );
+            throw new SyntaxError("esperava ';'", $semi);
         }
 
         return new DeclarationNode($type, $name, $initializer);
@@ -252,18 +248,14 @@ class Parser
 
         $opToken = $this->match('OPERATOR');
         if ($opToken->value !== '=') {
-            throw new \RuntimeException(
-                "Syntax error: esperava '=', encontrou '{$opToken->value}'"
-            );
+            throw new SyntaxError("esperava '='", $opToken);
         }
 
         $expr = $this->parseExpression();
 
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException(
-                "Syntax error: esperava ';', encontrou '{$semi->value}'"
-            );
+            throw new SyntaxError("esperava ';'", $semi);
         }
 
         return new AssignmentNode($name, $expr);
@@ -319,9 +311,7 @@ class Parser
 
         $opToken = $this->match('OPERATOR');
         if ($opToken->value !== '=') {
-            throw new \RuntimeException(
-                "Syntax error: esperava '=', encontrou '{$opToken->value}'"
-            );
+            throw new SyntaxError("esperava '='", $opToken);
         }
 
         $expr = $this->parseExpression();
@@ -349,7 +339,7 @@ class Parser
 
         $lpar = $this->match('DELIMITER');
         if ($lpar->value !== '(') {
-            throw new \RuntimeException("Syntax error: esperava '(', encontrou '{$lpar->value}'");
+            throw new SyntaxError("esperava '('", $lpar);
         }
 
         $init = null;
@@ -359,12 +349,12 @@ class Parser
             $init = $this->parseAssignmentNoSemi();
             $semi = $this->match('DELIMITER');
             if ($semi->value !== ';') {
-                throw new \RuntimeException("Syntax error: esperava ';' após init, encontrou '{$semi->value}'");
+                throw new SyntaxError("esperava ';' após init", $semi);
             }
         } else {
             $semi = $this->match('DELIMITER');
             if ($semi->value !== ';') {
-                throw new \RuntimeException("Syntax error: esperava ';' após init vazio, encontrou '{$semi->value}'");
+                throw new SyntaxError("esperava ';' após init vazio", $semi);
             }
         }
 
@@ -374,7 +364,7 @@ class Parser
         }
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException("Syntax error: esperava ';' após condição, encontrou '{$semi->value}'");
+            throw new SyntaxError("esperava ';' após condição", $semi);
         }
 
         $post = null;
@@ -389,7 +379,7 @@ class Parser
 
         $rpar = $this->match('DELIMITER');
         if ($rpar->value !== ')') {
-            throw new \RuntimeException("Syntax error: esperava ')', encontrou '{$rpar->value}'");
+            throw new SyntaxError("esperava ')'", $rpar);
         }
 
         $body = $this->parseStatement();
@@ -413,9 +403,7 @@ class Parser
     {
         $lbrace = $this->match('DELIMITER');
         if ($lbrace->value !== '{') {
-            throw new \RuntimeException(
-                "Syntax error: esperava '{', encontrou '{$lbrace->value}'"
-            );
+            throw new SyntaxError("esperava '{'", $lbrace);
         }
 
         $stmts = [];
@@ -425,9 +413,7 @@ class Parser
 
         $rbrace = $this->match('DELIMITER');
         if ($rbrace->value !== '}') {
-            throw new \RuntimeException(
-                "Syntax error: esperava '}', encontrou '{$rbrace->value}'"
-            );
+            throw new SyntaxError("esperava '}'", $rbrace);
         }
 
         return new BlockNode($stmts);
@@ -660,9 +646,7 @@ class Parser
         if ($la->type === 'DELIMITER' && $la->value === '(') {
             return $this->parseParenExpression();
         }
-        throw new \RuntimeException(
-            "Syntax error: esperava um fator (unário, número, string, identificador, chamada de função ou parêntese), encontrou {$la->type}"
-        );
+        throw new SyntaxError("esperava um fator (unário, número, string, identificador, chamada de função ou parêntese)", $la);
     }
 
     /**
@@ -683,7 +667,7 @@ class Parser
     {
         $lpar = $this->match('DELIMITER');
         if ($lpar->value !== '(') {
-            throw new \RuntimeException("esperava '(', encontrou '{$lpar->value}'");
+            throw new SyntaxError("esperava '('", $lpar);
         }
         $args = [];
         if (!($this->lookahead()->type === 'DELIMITER' && $this->lookahead()->value === ')')) {
@@ -698,7 +682,7 @@ class Parser
         }
         $rpar = $this->match('DELIMITER');
         if ($rpar->value !== ')') {
-            throw new \RuntimeException("esperava ')', encontrou '{$rpar->value}'");
+            throw new SyntaxError("esperava ')'", $rpar);
         }
         return new FunctionCallNode($name, $args);
     }
@@ -746,7 +730,7 @@ class Parser
         }
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException("Syntax error: esperava ';' após return");
+            throw new SyntaxError("esperava ';' após return", $semi);
         }
         return new ReturnNode($expr);
     }
@@ -772,7 +756,7 @@ class Parser
         $name      = $nameToken->value;
         $lpar = $this->match('DELIMITER');
         if ($lpar->value !== '(') {
-            throw new \RuntimeException("esperava '(', encontrou '{$lpar->value}'");
+            throw new SyntaxError("esperava '('", $lpar);
         }
         $parameters = [];
         if (!($this->lookahead()->type === 'DELIMITER' && $this->lookahead()->value === ')')) {
@@ -780,7 +764,7 @@ class Parser
         }
         $rpar = $this->match('DELIMITER');
         if ($rpar->value !== ')') {
-            throw new \RuntimeException("esperava ')', encontrou '{$rpar->value}'");
+            throw new SyntaxError("esperava ')'", $rpar);
         }
         $body = $this->parseBlock();
         return new FunctionNode($returnType, $name, $parameters, $body);
@@ -805,9 +789,7 @@ class Parser
         do {
             $typeToken = $this->lookahead();
             if (!in_array($typeToken->type, ['INT', 'FLOAT', 'CHAR', 'VOID'], true)) {
-                throw new \RuntimeException(
-                    "Syntax error: esperava tipo de parâmetro, encontrou {$typeToken->type}"
-                );
+                throw new SyntaxError("esperava tipo de parâmetro", $typeToken);
             }
             $this->pos++;
             $paramType = strtolower($typeToken->type);
@@ -840,7 +822,7 @@ class Parser
         $this->match('BREAK');
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException("Syntax error: esperava ';' após break");
+            throw new SyntaxError("esperava ';' após break", $semi);
         }
         return new BreakNode();
     }
@@ -862,7 +844,7 @@ class Parser
         $this->match('CONTINUE');
         $semi = $this->match('DELIMITER');
         if ($semi->value !== ';') {
-            throw new \RuntimeException("Syntax error: esperava ';' após continue");
+            throw new SyntaxError("esperava ';' após continue", $semi);
         }
         return new ContinueNode();
     }
@@ -878,7 +860,7 @@ class Parser
      * - Exige chaves de abertura e fechamento.
      *
      * @return SwitchNode Nó representando o comando switch.
-     * @throws \RuntimeException Se houver erro de sintaxe nas chaves ou nos casos.
+     * @throws SyntaxError Em caso de erro de sintaxe nas chaves ou nos casos.
      */
     private function parseSwitchStatement(): SwitchNode
     {
@@ -886,30 +868,34 @@ class Parser
         $expr = $this->parseParenExpression();
         $lbrace = $this->match('DELIMITER');
         if ($lbrace->value !== '{') {
-            throw new \RuntimeException("Syntax error: esperava '{', encontrou '{$lbrace->value}'");
+            throw new SyntaxError("esperava '{'", $lbrace);
         }
+
         $cases = [];
         while ($this->lookahead()->type === 'CASE') {
             $cases[] = $this->parseCaseClause();
         }
+
         $defaultStmts = [];
         if ($this->lookahead()->type === 'DEFAULT') {
             $this->match('DEFAULT');
             $colon = $this->match('DELIMITER');
             if ($colon->value !== ':') {
-                throw new \RuntimeException("Syntax error: esperava ':', encontrou '{$colon->value}'");
+                throw new SyntaxError("esperava ':'", $colon);
             }
             while (
-                !($this->lookahead()->type === 'DELIMITER' && $this->lookahead()->value === '}')
-                && $this->lookahead()->type !== 'CASE'
+                !($this->lookahead()->type === 'DELIMITER' && $this->lookahead()->value === '}') &&
+                $this->lookahead()->type !== 'CASE'
             ) {
                 $defaultStmts[] = $this->parseStatement();
             }
         }
+
         $rbrace = $this->match('DELIMITER');
         if ($rbrace->value !== '}') {
-            throw new \RuntimeException("Syntax error: esperava '}', encontrou '{$rbrace->value}'");
+            throw new SyntaxError("esperava '}'", $rbrace);
         }
+
         return new SwitchNode($expr, $cases, $defaultStmts);
     }
 
@@ -931,7 +917,7 @@ class Parser
         $value  = $this->parseExpression();
         $colon = $this->match('DELIMITER');
         if ($colon->value !== ':') {
-            throw new \RuntimeException("esperava ':', encontrou '{$colon->value}'");
+            throw new SyntaxError("esperava ':'", $colon);
         }
         $stmts = [];
         while (
@@ -959,9 +945,18 @@ class Parser
      */
     private function parseParenExpression(): ExpressionNode
     {
-        $this->match('DELIMITER', '(');
+        $token = $this->match('DELIMITER');
+        if ($token->value !== '(') {
+            throw new SyntaxError("esperava '('", $token);
+        }
+
         $expr = $this->parseExpression();
-        $this->match('DELIMITER', ')');
+
+        $token = $this->match('DELIMITER');
+        if ($token->value !== ')') {
+            throw new SyntaxError("esperava ')'", $token);
+        }
+
         return $expr;
     }
 }
