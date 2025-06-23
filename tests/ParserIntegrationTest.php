@@ -13,11 +13,10 @@ class ParserIntegrationTest extends TestCase
     #[DataProvider('validCodeProvider')]
     public function testParsesValidPrograms(string $filename): void
     {
-        
         $code = file_get_contents($filename);
         $lexer = new Lexer($code);
         $tokens = $lexer->tokenize();
-        
+
         if ($_ENV['DEBUG_TESTS'] ?? false) {
             echo "\n🔎 Testando: " . basename($filename) . PHP_EOL;
             foreach ($tokens as $i => $t) {
@@ -35,12 +34,11 @@ class ParserIntegrationTest extends TestCase
         );
     }
 
-
     #[Test]
     #[DataProvider('invalidCodeProvider')]
     public function testThrowsOnInvalidPrograms(string $filename): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\Compiler\SyntaxError::class);
 
         $code = file_get_contents($filename);
         $lexer = new Lexer($code);
