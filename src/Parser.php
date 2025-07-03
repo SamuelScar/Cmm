@@ -578,22 +578,22 @@ class Parser
         return $this->parseTermPrime($node);
     }
 
-    /**
-     * Continua o parsing de operações de multiplicação e divisão em sequência.
+   /**
+     * Continua o parsing de operações de multiplicação, divisão e módulo em sequência.
      *
      * Gramática:
-     *   Term' ::= ("*" | "/") Factor Term' | ε
+     *   Term' ::= ("*" | "/" | "%") Factor Term' | ε
      *
-     * - Se encontrar '*' ou '/', consome, parseia Factor e chama recursivamente
+     * - Se encontrar '*', '/', ou '%', consome, parseia Factor e chama recursivamente
      *   para lidar com mais operadores.
      *
      * @param ExpressionNode $left Nó da parte esquerda já parseada.
-     * @return ExpressionNode Nó de expressão completo após multiplicações/divisões.
+     * @return ExpressionNode Nó de expressão completo após multiplicações/divisões/módulos.
      */
     private function parseTermPrime(ExpressionNode $left): ExpressionNode
     {
         $la = $this->lookahead();
-        if ($la->type === 'OPERATOR' && in_array($la->value, ['*', '/'], true)) {
+        if ($la->type === 'OPERATOR' && in_array($la->value, ['*', '/', '%'], true)) {
             $op    = $this->match('OPERATOR')->value;
             $right = $this->parseFactor();
             $bin   = new BinaryOpNode($op, $left, $right);
