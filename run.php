@@ -23,6 +23,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Compiler\Lexer;
 use Compiler\Parser;
+use Compiler\SemanticAnalyzer;
 use Compiler\SyntaxError;
 
 if (php_sapi_name() !== 'cli') {
@@ -72,3 +73,19 @@ try {
     echo "Erro: ", $e->getMessage(), PHP_EOL;
     exit(1);
 }
+
+echo "\n=== ANÁLISE SEMÂNTICA ===\n";
+
+$analyzer = new SemanticAnalyzer();
+$semanticErrors = $analyzer->analyze($ast);
+
+if (!empty($semanticErrors)) {
+    echo "Erros semânticos encontrados:\n";
+    foreach ($semanticErrors as $error) {
+        echo "- {$error}\n";
+    }
+    exit(1);
+} else {
+    echo "Nenhum erro semântico encontrado.\n";
+}
+
