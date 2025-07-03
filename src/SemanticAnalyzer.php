@@ -5,223 +5,183 @@ namespace Compiler;
 use Compiler\Node\ProgramNode;
 
 /**
- * Classe responsável pela análise semântica do código-fonte em CMM.
- * Verifica declarações, escopos, uso de variáveis e validações de laços.
+ * Classe responsável pela análise semântica do código‐fonte em CMM.
+ * Verifica declarações, escopos, uso de variáveis, laços, retornos e expressões.
  */
 class SemanticAnalyzer
 {
     private array $symbolTable = [];
-    private array $scopeStack = [];
-    private array $errors = [];
-    private int $blockCounter = 0;
-    private int $loopDepth = 0;
+    private array $scopeStack  = [];
+    private array $errors      = [];
+    private int $blockCounter  = 0;
+    private int $loopDepth     = 0;
 
-    /**
-     * Executa a análise semântica a partir da AST.
-     *
-     * @param ProgramNode $program
-     * @return array Lista de erros semânticos encontrados.
-     */
     public function analyze(ProgramNode $program): array
     {
         $this->symbolTable = [];
-        $this->scopeStack = ['global'];
-        $this->errors = [];
+        $this->scopeStack  = [];
+        $this->errors      = [];
 
+        $this->enterScope('global');
         $this->visitProgram($program);
+        $this->exitScope();
 
         return $this->errors;
     }
 
-    /**
-     * Visita o nó principal do programa e percorre todos os statements.
-     *
-     * @param ProgramNode $program
-     */
     private function visitProgram(ProgramNode $program): void
     {
-        foreach ($program->statements as $statement) {
-            $this->visitStatement($statement);
+        foreach ($program->statements as $stmt) {
+            if ($stmt instanceof \Compiler\Node\FunctionNode) {
+                $this->visitFunction($stmt);
+            } else {
+                $this->visitStatement($stmt);
+            }
         }
     }
 
-    /**
-     * Visita um statement individual e direciona para o método correspondente.
-     *
-     * @param mixed $statement
-     */
-    private function visitStatement($statement): void
+    private function visitFunction(\Compiler\Node\FunctionNode $node): void
     {
-        if ($statement instanceof \Compiler\Node\DeclarationNode) {
-            $this->visitDeclaration($statement);
-        } elseif ($statement instanceof \Compiler\Node\AssignmentNode) {
-            $this->visitAssignment($statement);
-        } elseif ($statement instanceof \Compiler\Node\IfNode) {
-            $this->visitIf($statement);
-        } elseif ($statement instanceof \Compiler\Node\WhileNode) {
-            $this->visitWhile($statement);
-        } elseif ($statement instanceof \Compiler\Node\ForNode) {
-            $this->visitFor($statement);
-        } elseif ($statement instanceof \Compiler\Node\BreakNode) {
-            $this->visitBreak($statement);
-        } elseif ($statement instanceof \Compiler\Node\ContinueNode) {
-            $this->visitContinue($statement);
+        $this->enterScope($node->name);
+        foreach ($node->parameters as $param) {
+            $this->symbolTable[$node->name][$param->name] = true;
+        }
+        foreach ($node->body->statements as $stmt) {
+            $this->visitStatement($stmt);
+        }
+        $this->exitScope();
+    }
+
+    private function visitStatement($stmt): void
+    {
+        if ($stmt instanceof \Compiler\Node\DeclarationNode) {
+            $this->visitDeclaration($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\AssignmentNode) {
+            $this->visitAssignment($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\IfNode) {
+            $this->visitIf($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\WhileNode) {
+            $this->visitWhile($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\ForNode) {
+            $this->visitFor($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\BreakNode) {
+            $this->visitBreak($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\ContinueNode) {
+            $this->visitContinue($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\ReturnNode) {
+            $this->visitReturn($stmt);
+        } elseif ($stmt instanceof \Compiler\Node\ExpressionStatementNode) {
+            $this->visitExpressionStatement($stmt);
         }
     }
 
-    /**
-     * Verifica se uma variável está declarada em algum escopo visível.
-     *
-     * @param string $identifier
-     * @return bool
-     */
-    private function isDeclared(string $identifier): bool
+    private function isDeclared(string $name): bool
     {
         for ($i = count($this->scopeStack) - 1; $i >= 0; $i--) {
             $scope = $this->scopeStack[$i];
-            if (isset($this->symbolTable[$scope][$identifier])) {
+            if (isset($this->symbolTable[$scope][$name])) {
                 return true;
             }
         }
         return false;
     }
 
-    /**
-     * Gera um nome único para cada novo bloco de escopo.
-     *
-     * @return string
-     */
     private function generateBlockName(): string
     {
-        $this->blockCounter++;
-        return "block{$this->blockCounter}";
+        return 'block' . (++$this->blockCounter);
     }
 
-    /**
-     * Entra em um novo escopo.
-     *
-     * @param string $scopeName
-     */
-    private function enterScope(string $scopeName): void
+    private function enterScope(string $name): void
     {
-        $this->scopeStack[] = $scopeName;
-        $this->symbolTable[$scopeName] = [];
+        $this->scopeStack[]       = $name;
+        $this->symbolTable[$name] = [];
     }
 
-    /**
-     * Sai do escopo atual.
-     */
     private function exitScope(): void
     {
         array_pop($this->scopeStack);
     }
 
-    /**
-     * Retorna o nome do escopo atual.
-     *
-     * @return string
-     */
     private function getCurrentScope(): string
     {
         return end($this->scopeStack);
     }
 
-    /**
-     * Visita uma declaração de variáveis e atualiza a tabela de símbolos.
-     *
-     * @param mixed $node
-     */
     private function visitDeclaration($node): void
     {
-        $currentScope = $this->getCurrentScope();
+        $scope = $this->getCurrentScope();
+        $name  = $node->name;
 
-        foreach ($node->identifiers as $identifier) {
-            if (isset($this->symbolTable[$currentScope][$identifier])) {
-                $this->errors[] = "Erro Semântico: Variável '{$identifier}' já declarada no escopo '{$currentScope}'.";
-            } else {
-                $this->symbolTable[$currentScope][$identifier] = 'int';
-            }
+        if (isset($this->symbolTable[$scope][$name])) {
+            $this->errors[] = "Erro Semântico: variável '{$name}' já declarada no escopo '{$scope}'.";
+        } else {
+            $this->symbolTable[$scope][$name] = true;
+        }
+
+        if ($node->initializer !== null) {
+            $this->visit($node->initializer);
         }
     }
 
-    /**
-     * Visita uma atribuição e verifica se a variável foi previamente declarada.
-     *
-     * @param mixed $node
-     */
     private function visitAssignment($node): void
     {
-        $identifier = $node->name;
-
-        if (!$this->isDeclared($identifier)) {
-            $this->errors[] = "Erro Semântico: Variável '{$identifier}' usada antes de ser declarada no escopo atual.";
+        $name = $node->name;
+        if (! $this->isDeclared($name)) {
+            $this->errors[] =
+                "Erro Semântico: variável '{$name}' usada antes de ser declarada no escopo atual.";
         }
-
-        // Mais pra frente: validar o lado direito da expressão se quiser
+        $this->visit($node->expression);
     }
 
-    /**
-     * Visita um bloco if, criando um novo escopo para ele.
-     *
-     * @param mixed $node
-     */
     private function visitIf($node): void
     {
-        $scopeName = $this->generateBlockName();
-        $this->enterScope($scopeName);
+        $this->visit($node->condition);
 
-        foreach ($node->statements as $statement) {
-            $this->visitStatement($statement);
+        $this->enterScope($this->generateBlockName());
+        foreach ($node->statements as $stmt) {
+            $this->visitStatement($stmt);
         }
-
         $this->exitScope();
+
+        if ($node->elseBranch !== null) {
+            $this->enterScope($this->generateBlockName());
+            foreach ($node->elseBranch->statements as $stmt) {
+                $this->visitStatement($stmt);
+            }
+            $this->exitScope();
+        }
     }
 
-    /**
-     * Visita um laço while, controlando escopo e profundidade de loop.
-     *
-     * @param mixed $node
-     */
     private function visitWhile($node): void
     {
+        $this->visit($node->condition);
+
         $this->loopDepth++;
-
-        $scopeName = $this->generateBlockName();
-        $this->enterScope($scopeName);
-
-        foreach ($node->body->statements as $statement) {
-            $this->visitStatement($statement);
+        $this->enterScope($this->generateBlockName());
+        foreach ($node->body->statements as $stmt) {
+            $this->visitStatement($stmt);
         }
-
         $this->exitScope();
         $this->loopDepth--;
     }
 
-    /**
-     * Visita um laço for, controlando escopo e profundidade de loop.
-     *
-     * @param mixed $node
-     */
     private function visitFor($node): void
     {
         $this->loopDepth++;
+        $this->enterScope($this->generateBlockName());
 
-        $scopeName = $this->generateBlockName();
-        $this->enterScope($scopeName);
+        if ($node->init      !== null) { $this->visit($node->init); }
+        if ($node->condition !== null) { $this->visit($node->condition); }
+        if ($node->post      !== null) { $this->visit($node->post); }
 
-        foreach ($node->statements as $statement) {
-            $this->visitStatement($statement);
+        foreach ($node->body->statements as $stmt) {
+            $this->visitStatement($stmt);
         }
 
         $this->exitScope();
         $this->loopDepth--;
     }
 
-    /**
-     * Verifica se o uso de break está dentro de um loop válido.
-     *
-     * @param mixed $node
-     */
     private function visitBreak($node): void
     {
         if ($this->loopDepth === 0) {
@@ -229,15 +189,51 @@ class SemanticAnalyzer
         }
     }
 
-    /**
-     * Verifica se o uso de continue está dentro de um loop válido.
-     *
-     * @param mixed $node
-     */
     private function visitContinue($node): void
     {
         if ($this->loopDepth === 0) {
             $this->errors[] = "Erro Semântico: 'continue' usado fora de um laço.";
+        }
+    }
+
+    private function visitReturn($node): void
+    {
+        if ($node->expression !== null) {
+            $this->visit($node->expression);
+        }
+    }
+
+    private function visitExpressionStatement($node): void
+    {
+        $this->visit($node->expression);
+    }
+
+    private function visitBinaryOpNode($node): void
+    {
+        $this->visit($node->left);
+        $this->visit($node->right);
+    }
+
+    private function visitUnaryOpNode($node): void
+    {
+        $this->visit($node->operand);
+    }
+
+    /**
+     * Despacha nós de expressão para o método específico, se existir.
+     * Filtra tudo que não for objeto para evitar ReflectionException.
+     */
+    private function visit($node): void
+    {
+        if (!is_object($node)) {
+            return;
+        }
+
+        $short  = (new \ReflectionClass($node))->getShortName();
+        $method = 'visit' . $short;
+
+        if (method_exists($this, $method)) {
+            $this->$method($node);
         }
     }
 }

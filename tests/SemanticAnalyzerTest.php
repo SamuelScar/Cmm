@@ -6,28 +6,27 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Compiler\Lexer;
 use Compiler\Parser;
 use Compiler\SemanticAnalyzer;
-use Compiler\Node\ProgramNode;
+use Compiler\SyntaxError;
 
 class SemanticAnalyzerTest extends TestCase
 {
     private function analyzeFile(string $filename): array
     {
-        $code = file_get_contents($filename);
-        $lexer = new Lexer($code);
-        $tokens = $lexer->tokenize();
-        $parser = new Parser($tokens);
-        $ast = $parser->parseProgram();
-
-        $analyzer = new SemanticAnalyzer();
-        return $analyzer->analyze($ast);
+        $code   = file_get_contents($filename);
+        $tokens = (new Lexer($code))->tokenize();
+        $ast    = (new Parser($tokens))->parseProgram();
+        return (new SemanticAnalyzer())->analyze($ast);
     }
 
     #[Test]
-    #[DataProvider('validFiles')]
+    #[DataProvider('validSemanticPrograms')]
     public function testValidSemanticPrograms(string $filename): void
     {
-        $errors = $this->analyzeFile($filename);
+        if (($_ENV['DEBUG_TESTS'] ?? false)) {
+            echo "\n🔎 [SEMÂNTICO-OK] Testando: " . basename($filename) . PHP_EOL;
+        }
 
+        $errors = $this->analyzeFile($filename);
         $this->assertEmpty(
             $errors,
             "Falha semântica inesperada em: " . basename($filename) . "\n" . implode("\n", $errors)
@@ -35,35 +34,35 @@ class SemanticAnalyzerTest extends TestCase
     }
 
     #[Test]
-    #[DataProvider('invalidFiles')]
+    #[DataProvider('invalidSemanticPrograms')]
     public function testInvalidSemanticPrograms(string $filename): void
     {
+        if (($_ENV['DEBUG_TESTS'] ?? false)) {
+            echo "\n🔎 [SEMÂNTICO-ERR] Testando: " . basename($filename) . PHP_EOL;
+        }
+
         try {
             $errors = $this->analyzeFile($filename);
-
-            // Só testa semântica se o código for sintaticamente válido
-            if (!empty($errors)) {
-                $this->assertTrue(true); // Encontrou erros semânticos como esperado
-            } else {
-                $this->markTestSkipped("O arquivo '{$filename}' é inválido sintaticamente e não chegou na análise semântica.");
-            }
-        } catch (\Compiler\SyntaxError) {
-            // Skip arquivos com erro sintático, porque eles nunca chegam na análise semântica
-            $this->markTestSkipped("Erro sintático em {$filename}, ignorando no teste semântico.");
+            $this->assertNotEmpty(
+                $errors,
+                "Esperado erro semântico em: " . basename($filename)
+            );
+        } catch (SyntaxError $_) {
+            $this->assertTrue(true);
         }
     }
 
-    public static function validFiles(): array
+    public static function validSemanticPrograms(): array
     {
-        $path = realpath(__DIR__ . '/test_files/valid_files');
-        $files = glob($path . '/*.c') ?: [];
+        $dir   = __DIR__ . '/test_files/valid_files_semantic';
+        $files = glob("$dir/*.c") ?: [];
         return array_map(fn($f) => [$f], $files);
     }
 
-    public static function invalidFiles(): array
+    public static function invalidSemanticPrograms(): array
     {
-        $path = realpath(__DIR__ . '/test_files/invalid_files');
-        $files = glob($path . '/*.c') ?: [];
+        $dir   = __DIR__ . '/test_files/invalid_files_semantic';
+        $files = glob("$dir/*.c") ?: [];
         return array_map(fn($f) => [$f], $files);
     }
 }

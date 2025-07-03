@@ -6,16 +6,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Compiler\Lexer;
 use Compiler\Parser;
 use Compiler\Node\ProgramNode;
+use Compiler\SyntaxError;
 
 class ParserIntegrationTest extends TestCase
 {
     #[Test]
-    #[DataProvider('validCodeProvider')]
+    #[DataProvider('validPrograms')]
     public function testParsesValidPrograms(string $filename): void
     {
-        $code = file_get_contents($filename);
-        $lexer = new Lexer($code);
-        $tokens = $lexer->tokenize();
+        $code   = file_get_contents($filename);
+        $tokens = (new Lexer($code))->tokenize();
 
         if ($_ENV['DEBUG_TESTS'] ?? false) {
             echo "\n🔎 Testando: " . basename($filename) . PHP_EOL;
@@ -23,41 +23,37 @@ class ParserIntegrationTest extends TestCase
                 echo str_pad($i, 2, ' ', STR_PAD_LEFT) . ': [' . $t->type . '] ' . $t->value . PHP_EOL;
             }
         }
-
-        $parser = new Parser($tokens);
-        $ast = $parser->parseProgram();
+        $ast    = (new Parser($tokens))->parseProgram();
 
         $this->assertInstanceOf(
             ProgramNode::class,
             $ast,
-            "Falha ao processar " . basename($filename)
+            "Falha ao processar sintaticamente " . basename($filename)
         );
     }
 
     #[Test]
-    #[DataProvider('invalidCodeProvider')]
+    #[DataProvider('invalidPrograms')]
     public function testThrowsOnInvalidPrograms(string $filename): void
     {
-        $this->expectException(\Compiler\SyntaxError::class);
+        $this->expectException(SyntaxError::class);
 
-        $code = file_get_contents($filename);
-        $lexer = new Lexer($code);
-        $tokens = $lexer->tokenize();
-        $parser = new Parser($tokens);
-        $parser->parseProgram();
+        $code   = file_get_contents($filename);
+        $tokens = (new Lexer($code))->tokenize();
+        (new Parser($tokens))->parseProgram();
     }
 
-    public static function validCodeProvider(): array
+    public static function validPrograms(): array
     {
-        $path = realpath(__DIR__ . '/test_files/valid_files');
-        $files = glob($path . '/*.c') ?: [];
+        $dir   = __DIR__ . '/test_files/valid_files_sintatic';
+        $files = glob("$dir/*.c") ?: [];
         return array_map(fn($f) => [$f], $files);
     }
 
-    public static function invalidCodeProvider(): array
+    public static function invalidPrograms(): array
     {
-        $path = realpath(__DIR__ . '/test_files/invalid_files');
-        $files = glob($path . '/*.c') ?: [];
+        $dir   = __DIR__ . '/test_files/invalid_files_sintatic';
+        $files = glob("$dir/*.c") ?: [];
         return array_map(fn($f) => [$f], $files);
     }
 }
