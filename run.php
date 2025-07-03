@@ -5,18 +5,10 @@
  * run.php
  *
  * Ponto de entrada da linha de comando para o compilador C em PHP.
- * Executa análise léxica e sintática, exibindo tokens e AST.
+ * Executa análise léxica, sintática, semântica e gera código assembly.
  *
  * Uso:
  *   php run.php <arquivo.c>
- *
- * Mensagens:
- *   - Se não for CLI, encerra com aviso.
- *   - Se não receber arquivo, exibe instrução de uso.
- *   - Ao ler o arquivo, exibe erro em caso de falha.
- *   - Exibe lista de tokens reconhecidos.
- *   - Em caso de erros léxicos, lista cada erro com linha/coluna e encerra.
- *   - Executa o parser e imprime a AST ou mensagem de erro sintático.
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -24,6 +16,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 use Compiler\Lexer;
 use Compiler\Parser;
 use Compiler\SemanticAnalyzer;
+use Compiler\CodeGenerator;
 use Compiler\SyntaxError;
 
 if (php_sapi_name() !== 'cli') {
@@ -42,6 +35,7 @@ if ($input === false) {
     exit(1);
 }
 
+// === LÉXICO ===
 $lexer  = new Lexer($input);
 $tokens = $lexer->tokenize();
 
@@ -59,6 +53,7 @@ if (!empty($errors)) {
     exit(1);
 }
 
+// === SINTÁTICO ===
 echo "\n=== PARSING ===\n";
 $parser = new Parser($tokens);
 
@@ -74,6 +69,7 @@ try {
     exit(1);
 }
 
+// === SEMÂNTICO ===
 echo "\n=== ANÁLISE SEMÂNTICA ===\n";
 
 $analyzer = new SemanticAnalyzer();
@@ -85,7 +81,14 @@ if (!empty($semanticErrors)) {
         echo "- {$error}\n";
     }
     exit(1);
-} else {
-    echo "Nenhum erro semântico encontrado.\n";
 }
 
+echo "Nenhum erro semântico encontrado.\n";
+
+// === GERAÇÃO DE CÓDIGO ===
+echo "\n=== GERAÇÃO DE CÓDIGO ===\n";
+$generator = new CodeGenerator();
+$assembly = $generator->generate($ast);
+
+file_put_contents('out.asm', $assembly);
+echo "✅ Código assembly gerado com sucesso: out.asm\n";
