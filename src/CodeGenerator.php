@@ -78,20 +78,29 @@ class CodeGenerator
     /**
      * Gera código para definição de função.
      *
+     * Este método também realiza otimização de código morto, removendo instruções
+     * que não afetam o resultado final da função.
+     *
+     * Além disso, realiza otimização de potência, simplificando expressões de potência
+     * quando possível para melhorar a eficiência do código gerado.
+     *
      * @param FunctionNode $node Nó da função.
      */
     private function visitFunctionNode(FunctionNode $node): void
     {
-        $name = $node->name;
-        $this->emit("{$name}:");
+        $this->emit("{$node->name}:");
         $this->emit("    push rbp");
         $this->emit("    mov rbp, rsp");
-        $this->emit("    sub rsp, 16");
-        $this->localVars = [];
-        $this->nextOffset = -4;
+        $this->emit("    sub rsp,");
+
         foreach ($node->body->statements as $stmt) {
             $this->visit($stmt);
+
+            if ($stmt instanceof ReturnNode) {
+                return;
+            }
         }
+
         $this->emit("    mov rsp, rbp");
         $this->emit("    pop rbp");
         $this->emit("    ret");
@@ -178,11 +187,60 @@ class CodeGenerator
     /**
      * Gera código para operações binárias (+, -, *, /, etc).
      *
+     * Este método também realiza a otimização conhecida como Constant Folding,
+     * avaliando em tempo de compilação expressões cujos operandos são constantes,
+     * reduzindo assim o trabalho em tempo de execução.
+     *
      * @param BinaryOpNode $node Nó da operação binária.
      * @throws \Exception Se o operador não for suportado.
      */
     private function visitBinaryOpNode(BinaryOpNode $node): void
     {
+
+        if ($node->left instanceof NumberNode && $node->right instanceof NumberNode) {
+            $a = intval($node->left->value);
+            $b = intval($node->right->value);
+            switch ($node->op) {
+                case '+':
+                    $res = $a + $b;
+                    break;
+                case '-':
+                    $res = $a - $b;
+                    break;
+                case '*':
+                    $res = $a * $b;
+                    break;
+                case '/':
+                    $res = intdiv($a, $b);
+                    break;
+                case '%':
+                    $res = $a % $b;
+                    break;
+                default:
+                    $res = null;
+            }
+            $this->emit("    mov eax, {$res}");
+            return;
+        }
+
+
+        if ($node->op === '*') {
+
+            if ($node->left instanceof NumberNode && $this->isPowerOfTwo(intval($node->left->value))) {
+                $shift = (int) log(intval($node->left->value), 2);
+                $this->visit($node->right);
+                $this->emit("    shl eax, {$shift}");
+                return;
+            }
+
+            if ($node->right instanceof NumberNode && $this->isPowerOfTwo(intval($node->right->value))) {
+                $shift = (int) log(intval($node->right->value), 2);
+                $this->visit($node->left);
+                $this->emit("    shl eax, {$shift}");
+                return;
+            }
+        }
+
         $this->visit($node->left);
         $this->emit("    push rax");
         $this->visit($node->right);
@@ -208,49 +266,18 @@ class CodeGenerator
                 $this->emit("    idiv ecx");
                 $this->emit("    mov eax, edx");
                 break;
-            case '<':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    setl al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '<=':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    setle al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '>':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    setg al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '>=':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    setge al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '==':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    sete al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '!=':
-                $this->emit("    cmp eax, ebx");
-                $this->emit("    setne al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '&&':
-                $this->emit("    and eax, ebx");
-                $this->emit("    setne al");
-                $this->emit("    movzx eax, al");
-                break;
-            case '||':
-                $this->emit("    or eax, ebx");
-                $this->emit("    setne al");
-                $this->emit("    movzx eax, al");
-                break;
+
             default:
-                throw new \Exception("Operador não suportado: " . $node->op);
+                throw new \Exception("Operador não suportado: {$node->op}");
         }
+    }
+
+    /**
+     * Retorna true se $n for potência de dois.
+     */
+    private function isPowerOfTwo(int $n): bool
+    {
+        return $n > 0 && ($n & ($n - 1)) === 0;
     }
 
     /**
