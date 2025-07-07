@@ -10,6 +10,13 @@ use Compiler\Node\ProgramNode;
  */
 class SemanticAnalyzer
 {
+
+    /**
+     * Pilha de escopos que implementa a tabela de símbolos.
+     * Cada escopo (array associativo) mapeia identificadores aos seus tipos,
+     * permitindo resolução de nomes e detecção de redeclarações.
+     */
+
     private array $symbolTable = [];
     private array $scopeStack  = [];
     private array $errors      = [];
