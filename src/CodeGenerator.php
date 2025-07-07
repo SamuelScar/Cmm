@@ -194,83 +194,119 @@ class CodeGenerator
      * @param BinaryOpNode $node Nó da operação binária.
      * @throws \Exception Se o operador não for suportado.
      */
-    private function visitBinaryOpNode(BinaryOpNode $node): void
-    {
+private function visitBinaryOpNode(BinaryOpNode $node): void
+{
+    // Constant folding
+    if ($node->left instanceof NumberNode && $node->right instanceof NumberNode) {
+        $a = intval($node->left->value);
+        $b = intval($node->right->value);
+        switch ($node->op) {
+            case '+':  $res = $a + $b;     break;
+            case '-':  $res = $a - $b;     break;
+            case '*':  $res = $a * $b;     break;
+            case '/':  $res = intdiv($a, $b); break;
+            case '%':  $res = $a % $b;     break;
+            default:   $res = null;
+        }
+        $this->emit("    mov eax, {$res}");
+        return;
+    }
 
-        if ($node->left instanceof NumberNode && $node->right instanceof NumberNode) {
-            $a = intval($node->left->value);
-            $b = intval($node->right->value);
-            switch ($node->op) {
-                case '+':
-                    $res = $a + $b;
-                    break;
-                case '-':
-                    $res = $a - $b;
-                    break;
-                case '*':
-                    $res = $a * $b;
-                    break;
-                case '/':
-                    $res = intdiv($a, $b);
-                    break;
-                case '%':
-                    $res = $a % $b;
-                    break;
-                default:
-                    $res = null;
-            }
-            $this->emit("    mov eax, {$res}");
+    // Strength reduction: x * power-of-two → shl
+    if ($node->op === '*') {
+        if ($node->left instanceof NumberNode && $this->isPowerOfTwo(intval($node->left->value))) {
+            $shift = (int) log(intval($node->left->value), 2);
+            $this->visit($node->right);
+            $this->emit("    shl eax, {$shift}");
             return;
         }
-
-
-        if ($node->op === '*') {
-
-            if ($node->left instanceof NumberNode && $this->isPowerOfTwo(intval($node->left->value))) {
-                $shift = (int) log(intval($node->left->value), 2);
-                $this->visit($node->right);
-                $this->emit("    shl eax, {$shift}");
-                return;
-            }
-
-            if ($node->right instanceof NumberNode && $this->isPowerOfTwo(intval($node->right->value))) {
-                $shift = (int) log(intval($node->right->value), 2);
-                $this->visit($node->left);
-                $this->emit("    shl eax, {$shift}");
-                return;
-            }
-        }
-
-        $this->visit($node->left);
-        $this->emit("    push rax");
-        $this->visit($node->right);
-        $this->emit("    pop rbx");
-        switch ($node->op) {
-            case '+':
-                $this->emit("    add eax, ebx");
-                break;
-            case '-':
-                $this->emit("    sub eax, ebx");
-                break;
-            case '*':
-                $this->emit("    imul eax, ebx");
-                break;
-            case '/':
-                $this->emit("    mov ecx, ebx");
-                $this->emit("    cdq");
-                $this->emit("    idiv ecx");
-                break;
-            case '%':
-                $this->emit("    mov ecx, ebx");
-                $this->emit("    cdq");
-                $this->emit("    idiv ecx");
-                $this->emit("    mov eax, edx");
-                break;
-
-            default:
-                throw new \Exception("Operador não suportado: {$node->op}");
+        if ($node->right instanceof NumberNode && $this->isPowerOfTwo(intval($node->right->value))) {
+            $shift = (int) log(intval($node->right->value), 2);
+            $this->visit($node->left);
+            $this->emit("    shl eax, {$shift}");
+            return;
         }
     }
+
+    $this->visit($node->left);
+    $this->emit("    push rax");
+    $this->visit($node->right);
+    $this->emit("    pop rbx");
+
+    switch ($node->op) {
+        case '+':
+            $this->emit("    add eax, ebx");
+            break;
+        case '-':
+            $this->emit("    sub eax, ebx");
+            break;
+        case '*':
+            $this->emit("    imul eax, ebx");
+            break;
+        case '/':
+            $this->emit("    mov ecx, ebx");
+            $this->emit("    cdq");
+            $this->emit("    idiv ecx");
+            break;
+        case '%':
+            $this->emit("    mov ecx, ebx");
+            $this->emit("    cdq");
+            $this->emit("    idiv ecx");
+            $this->emit("    mov eax, edx");
+            break;
+
+        case '<':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    setl al");
+            $this->emit("    movzx eax, al");
+            break;
+        case '<=':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    setle al");
+            $this->emit("    movzx eax, al");
+            break;
+        case '>':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    setg al");
+            $this->emit("    movzx eax, al");
+            break;
+        case '>=':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    setge al");
+            $this->emit("    movzx eax, al");
+            break;
+        case '==':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    sete al");
+            $this->emit("    movzx eax, al");
+            break;
+        case '!=':
+            $this->emit("    cmp ebx, eax");
+            $this->emit("    setne al");
+            $this->emit("    movzx eax, al");
+            break;
+
+        case '&&':
+            $this->emit("    cmp ebx, 0");
+            $this->emit("    setne bl");
+            $this->emit("    cmp eax, 0");
+            $this->emit("    setne al");
+            $this->emit("    and al, bl");
+            $this->emit("    movzx eax, al");
+            break;
+        case '||':
+            $this->emit("    cmp ebx, 0");
+            $this->emit("    setne bl");
+            $this->emit("    cmp eax, 0");
+            $this->emit("    setne al");
+            $this->emit("    or al, bl");
+            $this->emit("    movzx eax, al");
+            break;
+
+        default:
+            throw new \Exception("Operador não suportado: {$node->op}");
+    }
+}
 
     /**
      * Retorna true se $n for potência de dois.
